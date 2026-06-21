@@ -1,0 +1,364 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{mdframed}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+\usepackage{mathptmx}
+
+% ---- colours ----
+\definecolor{ink}{HTML}{1A1A2E}
+\definecolor{accent}{HTML}{2C5F8A}
+\definecolor{ansgreen}{HTML}{1B7A43}
+\definecolor{boxbg}{HTML}{F4F7FA}
+\definecolor{boxrule}{HTML}{C9D6E2}
+\definecolor{ansbg}{HTML}{EAF4EE}
+\definecolor{ansrule}{HTML}{9FCBAF}
+\definecolor{rule}{HTML}{D8DEE6}
+
+\color{ink}
+
+% ---- header / footer ----
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\lhead{\small\textcolor{accent}{Mathematical Foundation for GenAI}}
+\rhead{\small\textcolor{accent}{Week 1 — Reference}}
+\cfoot{\small\thepage}
+
+% ---- question heading ----
+\newcounter{qcounter}
+\newcommand{\question}[1]{%
+  \refstepcounter{qcounter}%
+  \vspace{0.7em}%
+  {\large\bfseries\color{accent}Question \theqcounter.}\enspace
+  {\bfseries #1}\par\vspace{0.3em}%
+}
+
+% answer box
+\newenvironment{answer}{%
+  \begin{mdframed}[backgroundcolor=ansbg,linecolor=ansrule,linewidth=0.8pt,
+    roundcorner=4pt,innertopmargin=6pt,innerbottommargin=6pt,
+    innerleftmargin=8pt,innerrightmargin=8pt,skipabove=6pt,skipbelow=4pt]%
+}{\end{mdframed}}
+
+% options box
+\newenvironment{optionbox}{%
+  \begin{mdframed}[backgroundcolor=boxbg,linecolor=boxrule,linewidth=0.6pt,
+    roundcorner=3pt,innertopmargin=5pt,innerbottommargin=5pt,
+    innerleftmargin=8pt,innerrightmargin=8pt,skipabove=4pt,skipbelow=6pt]%
+}{\end{mdframed}}
+
+\newcommand{\optlist}[1]{\begin{itemize}[leftmargin=1.6em,itemsep=2pt,topsep=2pt,label={}]#1\end{itemize}}
+\newcommand{\opt}[2]{\item \textbf{#1.}~ #2}
+
+\newcommand{\correct}[1]{\textcolor{ansgreen}{\textbf{Answer: #1}}}
+
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+% ---- title block ----
+\begin{center}
+  {\Huge\bfseries\color{ink}Variational Divergence Minimization}\\[4pt]
+  {\large\color{accent} Mathematical Foundation for GenAI — Week 1}\\[6pt]
+  {\small Quiz questions with worked answers and explanations}\\[2pt]
+  {\footnotesize Topics: deep generative models, $f$-divergences, conjugate duality, the $f$-GAN min--max objective, reparameterization}
+\end{center}
+
+\vspace{0.3em}
+\hrule height 1pt
+\vspace{0.6em}
+
+% ============ CONTEXT PRIMER ============
+{\large\bfseries\color{accent} Background in one page}\par\vspace{0.3em}
+
+\textbf{The goal.} We have data $D=\{x_1,\dots,x_n\}$ drawn i.i.d.\ from an unknown distribution $P_X$, with each $x_i\in\mathbb{R}^d$. We want to \emph{learn to sample} from $P_X$. The plan: assume a parametric family $P_\theta$ (a model), measure how far $P_\theta$ is from $P_X$ using a divergence, and minimize that divergence over $\theta$.
+
+\textbf{The sampler.} Draw a latent $z\sim\mathcal{N}(0,I)$ and push it through a neural network $g_\theta$. The induced distribution of $x=g_\theta(z)$ is $P_\theta$ (the \emph{pushforward} of the latent distribution under $g_\theta$). At the optimum $P_\theta\approx P_X$, so $g_\theta(z)$ becomes an approximate sampler for the data.
+
+\textbf{The $f$-divergence.} For a convex, left-semicontinuous $f$ with $f(1)=0$,
+\[
+D_f(P_X\|P_\theta)=\int p_\theta(x)\,f\!\left(\frac{p_X(x)}{p_\theta(x)}\right)dx
+=\mathbb{E}_{x\sim P_\theta}\!\left[f\!\left(\tfrac{p_X(x)}{p_\theta(x)}\right)\right].
+\]
+Different choices of $f$ give different divergences (KL, reverse KL, JS, total variation).
+
+\textbf{The variational trick.} We don't know the densities, only samples. Using the convex conjugate $f^*(t)=\sup_{u}\big(tu-f(u)\big)$ and the identity $f(u)=\sup_t\big(tu-f^*(t)\big)$, the divergence becomes a \emph{lower bound expressed purely with expectations}:
+\[
+D_f(P_X\|P_\theta)\;\ge\;\sup_{T\in\mathcal{T}}\Big(\mathbb{E}_{x\sim P_X}[T(x)]-\mathbb{E}_{x\sim P_\theta}\big[f^*(T(x))\big]\Big).
+\]
+Both expectations can be estimated from samples (law of large numbers). Combined with the generator we get the $f$-GAN min--max problem
+\[
+\min_\theta\ \max_{T\in\mathcal{T}}\ \Big(\mathbb{E}_{x\sim P_X}[T(x)]-\mathbb{E}_{x\sim P_\theta}\big[f^*(T(x))\big]\Big),
+\]
+where $T$ is the discriminator/critic and $g_\theta$ is the generator.
+
+\vspace{0.4em}
+\hrule height 1pt
+\vspace{0.8em}
+
+% ============ QUESTIONS ============
+
+% ---------- Q1 ----------
+\question{The $f$-divergence between two distributions ($p_X,p_\theta$ are the density functions) is defined as:}
+\begin{optionbox}
+\optlist{
+\opt{A}{$D_f(P_X\|P_\theta)=\int p_\theta(x)\,f\!\left(\frac{p_X(x)}{p_\theta(x)}\right)dx$}
+\opt{B}{$D_f(P_X\|P_\theta)=\int p_X(x)\,f\!\left(\frac{p_X(x)}{p_\theta(x)}\right)dx$}
+\opt{C}{$D_f(P_X\|P_\theta)=\int p_\theta(x)\,f\!\left(\frac{p_\theta(x)}{p_X(x)}\right)dx$}
+\opt{D}{$D_f(P_X\|P_\theta)=\int p_X(x)\,f\!\left(\frac{p_\theta(x)}{p_X(x)}\right)dx$}
+}
+\end{optionbox}
+\begin{answer}
+\correct{A}\par\vspace{2pt}
+The $f$-divergence weights by the \emph{second} distribution $p_\theta$ (the one we measure divergence \emph{to}) and applies $f$ to the ratio $\frac{p_X}{p_\theta}$. A quick sanity check uses the KL generator $f(u)=u\log u$:
+\[
+\int p_\theta\,\frac{p_X}{p_\theta}\log\frac{p_X}{p_\theta}\,dx=\int p_X\log\frac{p_X}{p_\theta}\,dx=D_{\mathrm{KL}}(P_X\|P_\theta),
+\]
+recovering the forward KL exactly. Options B and D put the wrong density in front; C and D invert the ratio. Only A reproduces a valid $f$-divergence.
+\end{answer}
+
+% ---------- Q2 ----------
+\question{The $f$ function used in the divergence should be at least:}
+\begin{optionbox}
+\optlist{
+\opt{A}{Left Continuous}
+\opt{B}{Right Continuous}
+\opt{C}{Left Semi Continuous}
+\opt{D}{Right Semi Continuous}
+}
+\end{optionbox}
+\begin{answer}
+\correct{C — Left Semi Continuous}\par\vspace{2pt}
+The defining conditions on $f$ are: convex, \emph{left- (lower-) semicontinuous}, and $f(1)=0$. Lower semicontinuity is the technical requirement that makes the convex conjugate $f^*$ (and the biconjugate $f^{**}=f$) well behaved, which is what the entire variational lower bound relies on. Full continuity is stronger than needed; semicontinuity is the minimal requirement.
+\end{answer}
+
+% ---------- Q3 ----------
+\question{What is the $f$ function for KL-divergence?}
+\begin{optionbox}
+\optlist{
+\opt{A}{$\log(u+1)$}
+\opt{B}{$u\log(u)$}
+\opt{C}{$0.5\,|u-1|$}
+\opt{D}{$(u+1)\log(u+1)$}
+}
+\end{optionbox}
+\begin{answer}
+\correct{B — $u\log(u)$}\par\vspace{2pt}
+Substituting $f(u)=u\log u$ into the definition gives
+$\int p_\theta\cdot\frac{p_X}{p_\theta}\log\frac{p_X}{p_\theta}\,dx=\int p_X\log\frac{p_X}{p_\theta}\,dx$, the forward KL. For reference, option C, $0.5|u-1|$, is the generator of the \emph{total variation} distance.
+\end{answer}
+
+% ---------- Q4 ----------
+\question{Is Forward KL the same as Reverse KL?}
+\begin{optionbox}
+\optlist{
+\opt{A}{Yes}
+\opt{B}{No}
+}
+\end{optionbox}
+\begin{answer}
+\correct{B — No}\par\vspace{2pt}
+Forward KL is $D_{\mathrm{KL}}(P_X\|P_\theta)$ and reverse KL is $D_{\mathrm{KL}}(P_\theta\|P_X)$; in general $D_{\mathrm{KL}}(P\|Q)\ne D_{\mathrm{KL}}(Q\|P)$ — KL is \emph{not symmetric}. They also induce different fitting behavior: forward KL is mass-covering / mean-seeking (it penalizes the model placing zero mass where the data has mass), while reverse KL is mode-seeking (it lets the model concentrate on a subset of modes).
+\end{answer}
+
+% ---------- Q5 ----------
+\question{If $f(u)$ is a convex function, then the conjugate function $f^*(t)$ is a:}
+\begin{optionbox}
+\optlist{
+\opt{A}{Concave function}
+\opt{B}{Convex function}
+\opt{C}{Quasi-Convex function}
+\opt{D}{Quasi-Concave function}
+}
+\end{optionbox}
+\begin{answer}
+\correct{B — Convex function}\par\vspace{2pt}
+The convex conjugate $f^*(t)=\sup_{u}\big(tu-f(u)\big)$ is a pointwise supremum of \emph{affine} functions of $t$ (each fixed $u$ gives the line $t\mapsto tu-f(u)$). A pointwise supremum of affine/convex functions is always convex — so $f^*$ is convex regardless of whether the original $f$ was convex.
+\end{answer}
+
+% ---------- Q6 ----------
+\question{If the divergence is the JS-divergence, what is the $f$ function used?}
+\begin{optionbox}
+\optlist{
+\opt{A}{$0.5\big(u\log(u+1)-(u+1)\log(0.5(u+1))\big)$}
+\opt{B}{$0.5\big(u\log(u)-(u-1)\log(0.5(u-1))\big)$}
+\opt{C}{$0.5\big(u\log(u-1)-(u+1)\log(0.5(u+1))\big)$}
+\opt{D}{$0.5\big(u\log(u)-(u+1)\log(0.5(u+1))\big)$}
+}
+\end{optionbox}
+\begin{answer}
+\correct{D}\par\vspace{2pt}
+The JS generator is $f(u)=\tfrac12\big(u\log u-(u+1)\log\tfrac{u+1}{2}\big)$, and $0.5(u+1)=\tfrac{u+1}{2}$. Only D has both the correct $u\log(u)$ term and the correct $(u+1)\log(0.5(u+1))$ term. A has $u\log(u+1)$ (wrong first term), B uses $(u-1)$, and C has $u\log(u-1)$.
+\end{answer}
+
+% ---------- Q7 ----------
+\question{Is there a function $f$ such that the resulting divergence can take negative values?}
+\begin{optionbox}
+\optlist{
+\opt{A}{Maybe for some values}
+\opt{B}{Yes}
+\opt{C}{No}
+}
+\end{optionbox}
+\begin{answer}
+\correct{C — No}\par\vspace{2pt}
+An $f$-divergence is always non-negative for any valid $f$. By Jensen's inequality (using convexity of $f$):
+\[
+D_f(P_X\|P_\theta)=\mathbb{E}_{p_\theta}\!\left[f\!\left(\tfrac{p_X}{p_\theta}\right)\right]\ge f\!\left(\mathbb{E}_{p_\theta}\!\left[\tfrac{p_X}{p_\theta}\right]\right)=f(1)=0,
+\]
+since $\mathbb{E}_{p_\theta}\!\big[\tfrac{p_X}{p_\theta}\big]=\int p_\theta\cdot\tfrac{p_X}{p_\theta}\,dx=\int p_X\,dx=1$ and $f(1)=0$. So the divergence can never be negative.
+\end{answer}
+
+% ---------- Q8 ----------
+\question{Given the variational representation
+$D_f(P_X\|P_\theta)=\sup_{T\in\mathcal{T}}\big(\mathbb{E}_{x\sim P_X}[T(x)]-\mathbb{E}_{x\sim P_\theta}[f^*(T(x))]\big)$,
+which statements correctly describe how this leads to a min--max problem? \textnormal{(Select all that apply.)}}
+\begin{optionbox}
+\optlist{
+\opt{A}{The inner supremum over $T$ corresponds to the discriminator maximizing the difference between real and generated data.}
+\opt{B}{The generator minimizes the divergence by pushing $P_\theta$ closer to $P_X$.}
+\opt{C}{The convex conjugate $f^*$ ensures the $f$-divergence is symmetric and always tractable.}
+\opt{D}{The objective defines a saddle-point problem.}
+\opt{E}{The generator maximizes the divergence by generating more distinguishable samples.}
+}
+\end{optionbox}
+\begin{answer}
+\correct{A, B, D}\par\vspace{2pt}
+The full objective is $\min_\theta\max_{T\in\mathcal{T}}\big(\mathbb{E}_{P_X}[T]-\mathbb{E}_{P_\theta}[f^*(T)]\big)$.\par\vspace{2pt}
+\textbf{A} — the inner $\sup_T$ is the discriminator/critic; maximizing this objective amounts to best distinguishing real ($P_X$) from generated ($P_\theta$) samples. \textbf{B} — the outer $\min_\theta$ trains the generator $g_\theta$ to push $P_\theta\to P_X$. \textbf{D} — a $\min\max$ objective \emph{is} a saddle-point problem by definition.\par\vspace{2pt}
+\textbf{C is false}: $f^*$ buys variational \emph{tractability}, not symmetry — most $f$-divergences (e.g.\ KL) are asymmetric. \textbf{E is false}: it has the roles backwards — the generator \emph{minimizes} the divergence to make samples \emph{less} distinguishable; the discriminator is the one that maximizes.
+\end{answer}
+
+% ---------- Q9 ----------
+\question{Which of the following are benefits of variational divergence minimization? \textnormal{(Select all that apply.)}}
+\begin{optionbox}
+\optlist{
+\opt{A}{Allows divergence estimation via samples instead of density functions.}
+\opt{B}{Requires access to exact density ratios between model and data.}
+\opt{C}{Can be implemented using neural networks for both the generator and discriminator.}
+\opt{D}{Provides flexibility to choose different divergence measures.}
+}
+\end{optionbox}
+\begin{answer}
+\correct{A, C, D}\par\vspace{2pt}
+\textbf{A} — the central benefit: the variational form uses only \emph{samples} from $P_X$ (the dataset) and $P_\theta$ (outputs of $g_\theta$), so the densities are never needed. \textbf{C} — both $g_\theta$ and the critic $T$ are neural networks (the $f$-GAN architecture). \textbf{D} — varying the convex function $f$ yields different divergences (KL, reverse KL, JS, TV).\par\vspace{2pt}
+\textbf{B is false} — and it is the \emph{opposite} of a benefit. The whole point of the method is to \emph{avoid} needing exact density ratios by working with samples and the variational lower bound.
+\end{answer}
+
+% ---------- Q10 ----------
+\question{With conjugate $f^*(t)=\sup_{u>0}(tu-f(u))$, in the variational representation of the $f$-divergence, what does the optimal $T(x)$ represent?}
+\begin{optionbox}
+\optlist{
+\opt{A}{An estimate of the likelihood ratio $\frac{p_X(x)}{p_\theta(x)}$.}
+\opt{B}{The output of a neural network discriminator $T_\vartheta(x)$.}
+\opt{C}{The true divergence value at each sample point.}
+}
+\end{optionbox}
+\begin{answer}
+\correct{A}\par\vspace{2pt}
+The inner supremum is tight where $T^*(x)=f'\!\big(\tfrac{p_X(x)}{p_\theta(x)}\big)$ — a function of the density ratio. So the optimal variational function \emph{encodes (an estimate of) the likelihood ratio} $\tfrac{p_X}{p_\theta}$. Option B describes the \emph{parameterization} we optimize over, not what the optimum \emph{represents}; the question asks the latter. (See Q14 for the precise functional form.)
+\end{answer}
+
+% ---------- Q11 ----------
+\question{You observe a dataset $D=\{x_i\}_{i=1}^n$ with $x_i\in\mathbb{R}^d$ and assume $x_i\overset{\text{i.i.d.}}{\sim}p_X$. Which statement is correct?}
+\begin{optionbox}
+\optlist{
+\opt{A}{The coordinates inside each $x_i$ are independent.}
+\opt{B}{The samples $x_i$ are independent draws from the same $p_X$, but coordinates within each $x_i$ may be dependent.}
+\opt{C}{$p_X(x)=\prod_{j=1}^d p_X(x_j)$ must hold.}
+\opt{D}{$p_X$ must be Gaussian.}
+}
+\end{optionbox}
+\begin{answer}
+\correct{B}\par\vspace{2pt}
+``i.i.d.'' is a statement about the \emph{samples} (data points): each $x_i$ is an independent draw from the same distribution $p_X$. It says nothing about the internal structure of a single $x_i$ — the coordinates within one vector can be strongly dependent (e.g.\ neighboring pixels in an image). A and C wrongly assert coordinate-wise independence; D wrongly assumes a Gaussian form. Neither is implied by i.i.d.
+\end{answer}
+
+% ---------- Q12 ----------
+\question{Let $z\sim p_z$ and $x=g_\theta(z)$. The induced distribution $p_\theta$ on $x$ is best described as:}
+\begin{optionbox}
+\optlist{
+\opt{A}{$p_\theta(x)=p_z(g_\theta(x))$.}
+\opt{B}{$p_\theta$ is the pushforward distribution of $p_z$ under $g_\theta$.}
+\opt{C}{$p_\theta(x)=\int p_z(z)\,dz$ (a constant).}
+\opt{D}{$p_\theta(x)=p_X(x)$ by construction.}
+}
+\end{optionbox}
+\begin{answer}
+\correct{B}\par\vspace{2pt}
+Sampling $z\sim p_z$ and applying the deterministic map $x=g_\theta(z)$ produces, by definition, the \emph{pushforward} measure of $p_z$ under $g_\theta$ (written $p_\theta=(g_\theta)_\# p_z$). A misapplies the map and omits the Jacobian (a valid change-of-variables density would be $p_z(g_\theta^{-1}(x))\,|\det J|$, not $p_z(g_\theta(x))$). C is a meaningless constant ($\int p_z\,dz=1$). D holds only \emph{at the optimum}, not by construction.
+\end{answer}
+
+% ---------- Q13 ----------
+\question{Using the variational form with $f(u)=u\log u$ and $f^*(t)=e^{t-1}$, the inner objective becomes:}
+\begin{optionbox}
+\optlist{
+\opt{A}{$\sup_T\big(\mathbb{E}_{p_X}[T]-\mathbb{E}_{p_\theta}[\log(1+e^{T})]\big)$}
+\opt{B}{$\sup_T\big(\mathbb{E}_{p_X}[T]-\mathbb{E}_{p_\theta}[e^{T-1}]\big)$}
+\opt{C}{$\sup_T\big(\mathbb{E}_{p_\theta}[T]-\mathbb{E}_{p_X}[e^{T-1}]\big)$}
+\opt{D}{$\inf_T\big(\mathbb{E}_{p_X}[T]-\mathbb{E}_{p_\theta}[e^{T-1}]\big)$}
+}
+\end{optionbox}
+\begin{answer}
+\correct{B}\par\vspace{2pt}
+Substitute $f^*(T(x))=e^{T(x)-1}$ into $\sup_T\big(\mathbb{E}_{p_X}[T]-\mathbb{E}_{p_\theta}[f^*(T)]\big)$. The first expectation is over $p_X$, the second over $p_\theta$, giving option B. (Check: $f^*(t)=\sup_{u}(tu-u\log u)$; setting the derivative $t-\log u-1=0$ gives $u=e^{t-1}$, hence $f^*(t)=e^{t-1}$.) A uses the \emph{JS} conjugate $\log(1+e^T)$; C swaps the two measures; D uses $\inf$ instead of $\sup$.
+\end{answer}
+
+% ---------- Q14 ----------
+\question{For a differentiable convex $f$, the tightness (Fenchel--Young equality) condition implies the optimal $T^*(x)$ satisfies:}
+\begin{optionbox}
+\optlist{
+\opt{A}{$T^*(x)=f\!\left(\frac{p_X(x)}{p_\theta(x)}\right)$}
+\opt{B}{$T^*(x)=f'\!\left(\frac{p_X(x)}{p_\theta(x)}\right)$}
+\opt{C}{$T^*(x)=\left(\frac{p_X(x)}{p_\theta(x)}\right)^{-1}$}
+\opt{D}{$T^*(x)=\log\frac{p_\theta(x)}{p_X(x)}$}
+}
+\end{optionbox}
+\begin{answer}
+\correct{B}\par\vspace{2pt}
+The Fenchel--Young inequality $f(u)+f^*(t)\ge ut$ holds with equality exactly when $t=f'(u)$. In the bound the ratio plays the role of $u=\tfrac{p_X}{p_\theta}$, so the optimal critic is $T^*(x)=f'\!\big(\tfrac{p_X(x)}{p_\theta(x)}\big)$. This refines Q10: $T^*$ \emph{encodes} the likelihood ratio (Q10), and its precise form is $f'$ \emph{of} that ratio (here). Option A applies $f$ instead of $f'$; C and D are specific forms that coincide with $f'$ only for particular $f$, not in general.
+\end{answer}
+
+% ---------- Q15 ----------
+\question{Let $L(\theta)=\mathbb{E}_{z\sim p_z}[\ell(g_\theta(z))]$ with $z$ independent of $\theta$. Which gradient expression is correct?}
+\begin{optionbox}
+\optlist{
+\opt{A}{$\nabla_\theta L=\mathbb{E}_z[\ell(g_\theta(z))\,\nabla_\theta\log p_z(z)]$}
+\opt{B}{$\nabla_\theta L=\mathbb{E}_z\big[J_{g_\theta}(z)^\top\nabla_x\ell(x)\,\big|\,x=g_\theta(z)\big]$}
+\opt{C}{$\nabla_\theta L=\nabla_\theta\int p_z(z)\,dz$}
+\opt{D}{$\nabla_\theta L=\mathbb{E}_{x\sim p_X}[\nabla_\theta\ell(x)]$}
+}
+\end{optionbox}
+\begin{answer}
+\correct{B}\par\vspace{2pt}
+Because the latent distribution $p_z$ does not depend on $\theta$, the gradient moves inside the expectation and the chain rule gives the Jacobian of $g_\theta$ times the gradient of $\ell$:
+\[
+\nabla_\theta L=\mathbb{E}_z\big[J_{g_\theta}(z)^\top\,\nabla_x\ell(x)\big|_{x=g_\theta(z)}\big].
+\]
+This is the \emph{pathwise / reparameterization} gradient. A is a score-function (REINFORCE) term, but here $\nabla_\theta\log p_z(z)=0$ since $p_z\perp\theta$, so it vanishes. C is zero ($\int p_z\,dz=1$, constant). D differentiates over the data measure $p_X$, which has no $\theta$ dependence.
+\end{answer}
+
+% ============ APPENDIX: answer key + note ============
+\vspace{0.6em}
+\hrule height 1pt
+\vspace{0.6em}
+{\large\bfseries\color{accent} Answer key at a glance}\par\vspace{0.3em}
+\begin{tabular}{@{}llll@{}}
+Q1: A & Q2: C & Q3: B & Q4: B\\
+Q5: B & Q6: D & Q7: C & Q8: A, B, D\\
+Q9: A, C, D & Q10: A & Q11: B & Q12: B\\
+Q13: B & Q14: B & Q15: B &\\
+\end{tabular}
+
+\vspace{0.6em}
+{\large\bfseries\color{accent} A note on Q10 vs.\ Q14}\par\vspace{0.2em}
+These two can look contradictory but are not. Q10 asks, among coarse options, what the optimal $T^*$ \emph{represents} — the answer is ``the likelihood ratio'' (A). Q14 asks for the \emph{precise} functional form under Fenchel--Young tightness — the answer is $f'$ \emph{of} that ratio (B). The optimal critic is $T^*(x)=f'\!\big(\tfrac{p_X}{p_\theta}\big)$; it is a monotone transform of the density ratio, so it ``encodes'' the ratio without being equal to it for a general $f$.
+
+\end{document}
