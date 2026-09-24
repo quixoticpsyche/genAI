@@ -1,0 +1,79 @@
+Part I — Adversarial models (Weeks 1–4)
+Week 1 — Divergences & the VDM setup
+
+Course roadmap: GANs → VAEs → DDPM/score models → AR/LLMs → SSMs → RL alignment. The core recipe for every generative model in the course: (i) assume a parametric family p_θ, (ii) define a divergence to p_x, (iii) minimise it over θ. Implicit sampler form: z ~ N(0,I), x = g_θ(z).
+
+f-divergence: D_f(p_x‖p_θ) = ∫ p_θ(x) f(p_x/p_θ) dx, with f convex, lower-semicontinuous, f(1) = 0. Examples given: f(u) = u log u → forward KL; f(u) = −log u → reverse KL; the JS form; f(u) = ½|u−1| → total variation.
+
+The central problem: you don't know either density, only samples. Solution chain — Law of Large Numbers turns integrals into sample averages, then the convex conjugate f*(t) = sup_u{ut − f(u)} and biconjugate f(u) = sup_t{tu − f*(t)} turn D_f into a variational sup over a function class T. Explicitly noted: the bound is loose because the chosen function class may not contain the optimal T*.
+
+Week 2 — Realising VDM as GANs
+
+T_w(x) parameterised as a neural net with an f-specific output activation g_f. Objective becomes a saddle point: min_θ max_w J(θ,w). Plugging f(u) = u log u − (u+1)log(u+1) with f*(t) = −log(1−e^t) recovers exactly the standard GAN objective E_px[log D_w(x)] + E_pθ[log(1−D_w(x))]. Then architecture and the practical alternating minibatch loop: fix θ, ascend w; fix w, descend θ.
+
+Week 3 — GAN as classifier-guided sampler, DCGAN, cGAN
+
+Reframes the discriminator as a likelihood-ratio classifier. Key argument: a counterexample showing classifier failure does not imply p_x = p_θ — hence the classifier must be trained jointly with the generator, not once up front. DCGAN swaps MLPs for transpose-convolution generators. Conditional GANs feed y (one-hot or text embedding) into both G and D to sample from p(x|y). Inference = draw z, push through trained g_θ.
+
+Week 4 — WGAN, inversion, domain adaptation, FID
+
+Why f-divergence GANs are unstable: manifold hypothesis — real data lies on a low-dimensional manifold, supports don't align, a perfect discriminator exists, gradients w.r.t. θ vanish.
+
+Wasserstein metric built from first principles: transport plans as joint distributions with marginal constraints, cost = E‖x − x′‖. Kantorovich-Rubinstein duality converts it to a sup over 1-Lipschitz critics.
+
+⚠️ Note: your notes enforce Lipschitzness by weight clipping (normalise ‖w‖ ≤ 1 after each step) — they do not cover gradient penalty (WGAN-GP). If a PYQ asks about WGAN-GP, it's outside these notes.
+
+Then GAN inversion (feature extraction, semantic editing) via BiGAN — the discriminator classifies joint pairs (x, E_φ(x)) vs (g_θ(z), z), with optimum at joint-distribution matching — and via latent regression. Domain adversarial networks for unsupervised domain adaptation. Closes with FID: fit Gaussians to Inception features and take the Wasserstein-2 distance, ‖μ_r − μ_g‖² + Tr(Σ_r + Σ_g − 2(Σ_rΣ_g)^½).
+
+Part II — Latent variable models (Weeks 5–6)
+Week 5 — Latent variables, ELBO, EM, GMMs, VAE setup
+
+p_θ(x) = ∫p_θ(x,z)dz makes log-likelihood intractable. Introduce q(z|x), apply Jensen's inequality, get the ELBO J_θ(q) = E_q log[p_θ(x,z)/q(z|x)].
+
+EM = coordinate ascent on the ELBO: q-step (analytically, the optimal q is the true posterior p_θ(z|x)), then θ-step. Monotone improvement guaranteed. GMM worked as the canonical example — responsibilities, mixing weights, means, covariances.
+
+The pivot: EM only works when p_θ(z|x) is computable. When it isn't → VAE. Second ELBO form derived: E_q[log p_θ(x|z)] − KL(q_φ(z|x)‖p(z)). Distinguishes deterministic NN representation (GAN generator outputs samples) from probabilistic (encoder outputs distribution parameters).
+
+Week 6 — VAE training, posterior collapse, β-VAE, VQ-VAE
+
+The gradient w.r.t. encoder φ can't be moved inside the expectation → reparameterization trick, z = μ_φ(x) + Σ_φ(x)^½ ε with ε ~ N(0,I), justified by the law of the unconscious statistician. Inverse-CDF given as the alternative. Gaussian decoder ⇒ reconstruction term is just ‖x − x̂_θ(z)‖². Closed-form KL for diagonal Gaussian against N(0,I). Then the explicit forward/backward pass recipe.
+
+Inference: sample z ~ N(0,I) → decoder for generation; encoder alone for embeddings.
+
+Posterior collapse: the KL term forces q_φ(z|x) → N(0,I) for all x, so the decoder can't distinguish inputs. β-VAE framed as the fix — a VAE is an autoencoder with a missing regularisation constant, so add β to trade off reconstruction against regularisation. (This is the framing your course uses, not disentanglement.)
+
+VQ-VAE: discrete learnable codebook, nearest-neighbour quantisation of each encoder column, codebook loss term. For sampling you must fit a separate generative model (a GMM) over the quantised codes — the decoder alone can't sample.
+
+Part III — Diffusion (Weeks 7–9)
+Week 7 — DDPM formulation
+
+DDPMs as hierarchical VAEs with three restrictions: latent dim = data dim, the encoder is fixed and non-learnable, and only decoding is learned. Forward process x_t = √α_t x_{t−1} + √(1−α_t) ε as a first-order Markov chain, giving q(x_t|x_{t−1}). Model defined as p_θ(x_{0:T}) = p(x_T)∏p_θ(x_{t−1}|x_t).
+
+(Weeks 7 and 8 overlap by two pages — Week 8 restates the model definition and ELBO setup. Normal lecture continuity, not a file error.)
+
+Week 8 — The DDPM ELBO, training, sampling
+
+Full ELBO derivation splitting into three terms: reconstruction (L₀), prior matching (no learnable parameters — a common exam point), and consistency/denoising matching. Bayes-inverts q(x_{t−1}|x_t,x_0) into closed form via completing the square, giving μ_q and Σ_q. Derives the forward jump q(x_t|x_0) = N(√ᾱ_t x_0, (1−ᾱ_t)I) by recursion. Gaussian-Gaussian KL collapses the consistency term to ‖μ_θ − μ_q‖². Reparameterising μ_θ through x̂_θ(x_t) turns it into regression on x₀ — the network is a denoiser, not a sample generator. Sinusoidal time embedding. Training loop (sample t uniformly, one noise draw, one gradient step) and inference (T sequential U-Net passes).
+
+Week 9 — Alternate DDPM views, guidance, DDIM
+
+Same consistency term re-derived two more ways: as noise regression ‖ε − ε_θ(x_t)‖², and via Tweedie's formula as score regression ‖∇log p(x_t) − s_θ(x_t)‖². Equating them shows true score = negatively scaled noise, so a noise-predicting DDPM is implicitly a score model.
+
+Classifier guidance: ∇log p(x_t|y) = ∇log p(x_t) + ∇log p(y|x_t), needing a separately trained noise-aware classifier. Classifier-free guidance uses Bayes to eliminate it, combining conditional and unconditional scores with weight γ before the gradient step.
+
+Latent diffusion: run the DDPM in a VQ-VAE latent space. DDIM: a non-Markovian inference family; since q(x_t|x_0) is unchanged, the ELBO is identical to DDPM — training is shared, only sampling differs. σ = 0 gives deterministic sampling and unique invertibility.
+
+Part IV — Autoregressive models (Week 10)
+
+Classical AR → neural AR → RNNs (vanishing gradients) → attention. Full transformer construction: Q/K/V projections, scaled dot-product with the √d_k denominator, causal mask (−∞ on future positions), multi-head with d_k = d_m/h plus concat-and-project, position-wise FFN, vocab projection, layer norm, residuals, sinusoidal positional encoding. Training by teacher forcing with cross-entropy. Decoding: greedy, categorical sampling, top-k, top-p/nucleus, temperature scaling.
+
+Part V — Alignment & state space models (Weeks 11–12)
+Week 11 — RL for LM alignment
+
+MDP tuple, policy, trajectory, discounted return. Policy gradient theorem derived via the log-derivative trick, with the transition kernel dropping out. Baseline subtraction for variance reduction; value/Q/advantage functions; proof that R_t − V^π(s_t) is an unbiased single-sample advantage estimator. LM-as-policy mapping (prompt = s₀, token = action, prompt+tokens = next state). Then importance sampling → surrogate objective → TRPO's explicit KL constraint → PPO's clipped ratio as the tractable substitute. Full PPO loss = clipped term + value loss + entropy bonus. Ends on reward modelling.
+
+Week 12 — DPO and SSMs
+
+Bradley-Terry preference model σ(r(x,y_w) − r(x,y_l)). DPO: the KL-constrained optimal policy contains an intractable partition function Z(x); rearrange to express r in terms of π and π_ref, substitute into Bradley-Terry, and Z(x) cancels — yielding a reward-model-free objective. "End of RLHF."
+
+SSMs: continuous state-space form, bilinear discretisation, unrolling into a convolution with kernel K̄, FFT-domain training, generating-function computation, S4 special cases (diagonal A; DPLR via the Woodbury identity), HiPPO initialisation, dimension-wise application to multivariate data. Mamba: input-dependent A, B, C — which destroys the convolution kernel, so training and inference move to the sequence domain via parallel scan.

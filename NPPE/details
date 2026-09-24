@@ -1,0 +1,99 @@
+Image Reconstruction Under Corruption
+
+You are given corrupted images and your task is to reconstruct the corresponding clean images as accurately as possible. The corruptions include a variety of degradations — masking, noise, blur, geometric distortions, and more — applied in varying combinations and strengths.
+
+This is a prediction competition. Your system must take a corrupted image as input and produce a reconstructed image submitted as flattened pixel values in CSV format.
+
+Evaluation
+
+Metric: Mean Squared Error (MSE)
+
+Your submission is scored using Mean Squared Error (MSE) computed between your reconstructed images and the hidden clean target images. Lower MSE is better (range: 0 to infinity)
+
+    Goal: To minimize the difference between the predicted and actual images.
+    Range: 0.0 to ∞ (a score of 0.0 means a perfect prediction).
+    Lower is better.
+
+Deadlines
+
+    Competition Start Date: Aug 28, 2026, 5:00 PM
+    Competition Extended Deadline:  Aug 31, 2026 11:59 PM IST
+    Notebook Submission Form Deadline: Sep 1, 2026 11:59 PM IST
+
+IMPORTANT NOTE
+
+You must join the Kaggle competition using your institute roll number as your team name. Submissions that do not follow this rule will not be graded and you will be awarded 0 marks.
+
+All models and resources must be self-contained within your Kaggle Notebook. The use of external APIs for model inference (e.g., OpenAI, Google AI), translation, or any other data processing is strictly prohibited. You may use any pre-trained model from hubs like Hugging Face as long as it runs entirely within the Kaggle environment.
+
+All submissions must be made exclusively through Kaggle Notebooks. No locally trained models or externally generated predictions will be accepted.
+Links
+
+    Kaggle Competition: https://www.kaggle.com/t/fbc5a40b5af24369ad294e145f18a773
+    Notebook Submission Form:  https://forms.gle/Hgs6mezoXb5NWKKu6
+
+Evaluation Criteria
+
+    Primary Metric: Mean Squared Error (MSE)
+    This is the primary metric for this task. A lower MSE score is better.
+    Baseline Score & Passing Requirement
+    A baseline MSE score of 180 has been established.
+    To be eligible for a passing grade, your final submission on the private leaderboard must achieve a MSE score lower than or equal to this baseline (≤ 180). Submissions with a higher MSE will not be considered for passing.
+    Final Score ( if your MSE score ≤ 180 ) : 
+
+Grading Policy
+
+Your eligibility for a grade is contingent on meeting the baseline requirement outlined above.
+
+For all passing submissions, a relative grading policy will be applied based on your model’s final MSE score and your rank on the private leaderboard. Your performance will be assessed relative to the scores achieved by the top participants to ensure a fair grading curve.
+Submission Guidelines
+
+    Method: All submissions must be made through Kaggle Notebooks only.
+    Submission Limits: You are allowed 5 submissions per day.
+    Notebook Requirements: Your final notebook must be fully reproducible and well-documented with clear comments explaining your approach.
+
+Important Notes
+
+    Detailed instructions regarding all aspects of the competition, especially the submission format, are available on the Kaggle Competition Page.
+
+Good luck with your project
+
+
+Overview
+
+You are given corrupted images and your task is to reconstruct the corresponding clean images as accurately as possible. The corruptions include a variety of degradations — masking, noise, blur, geometric distortions, and more — applied in varying combinations and strengths.
+
+This is a prediction competition. Your system must take a corrupted image as input and produce a reconstructed image submitted as flattened pixel values in CSV format.
+
+Start
+3 days ago
+
+Close
+a day to go
+Description
+
+Each image is corrupted by a random composition of multiple degradation types. The corruption style and severity vary from image to image. Some corruptions affect local regions (masking, patch distortion), others affect global properties (blur, noise, contrast), and some affect geometry (rotation, scaling).
+
+Important: The exact corruption types and severity labels are not provided. You must analyze the training pairs to understand the degradation patterns.
+Evaluation
+
+Your submission is scored using Mean Squared
+
+
+Dataset Description:
+
+File/Folder 	Description
+train_corrupt/ 	Corrupted training images (PNG, 32×32 RGB)
+train_clean/ 	Corresponding clean training images
+train.csv 	Training metadata — columns: id, class, clean_filename, corrupt_filename
+test_corrupt/ 	Corrupted test images (PNG, 32×32 RGB)
+sample_submission.csv 	Sample submission file with correct format Error (MSE) computed between your reconstructed images and the hidden clean target images. Lower MSE is better (range: 0 to infinity)
+
+Image Details
+
+    Resolution: 32 × 32 pixels, 3 channels (RGB)
+    Pixel values: integers in [0, 255]
+    Total pixels per image: 3072 (32 × 32 × 3)
+
+
+
